@@ -31,6 +31,7 @@ _wreckType = "B_Heli_Attack_01_F";
 //Create group to add crew to
 airCrew = createGroup west;
 publicKilledCrew = 0;
+publicCrewRescued = 0;
 
 //Finding suitable location to place wrecked helicopter
 //*** Eventually needs blacklist locations or to check that it isn't too near enemy locations
@@ -128,8 +129,13 @@ createMarker ["Task", _taskLocation];
 _Wreck addMPEventHandler ["MPKilled", { wreckTask setTaskState "Succeeded";}];
 
 
+_rescue = createTrigger ["NONE", getmarkerPos _base,true];
+_rescue setTriggerArea [50,50,0,false];
+_rescue setTriggerActivation ["ANY", "PRESENT",true];
 
 
+//_rescue setTriggerStatements ["{[_rescue, _x]call BIS_fnc_inTrigger}count [airCrew] > 0;","publicCrewRescued = publicCrewRescued + 1; if (publicCrewRescued >= ((count units airCrew))) then { crewTask setTaskState 'Succeeded';};",""];
+_rescue setTriggerStatements ["{[thisTrigger, _x]call BIS_fnc_inTrigger} count units airCrew >= 1;","crewTask setTaskState 'Succeeded';",""];
 //SOME SORT OF ENEMY CREATION
 
 if (_enemyEnable) then {};
