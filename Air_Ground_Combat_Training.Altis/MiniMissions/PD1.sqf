@@ -47,7 +47,7 @@ _Wreck =  createVehicle[_wreckType, _wreckLocation,[],0,"NONE"];
 _Wreck setDamage .9;
 _Wreck setFuel 0;
 _Wreck lock true;
-_Wreck addEventHandler ["killed", { setTaskState "Succeeded";}];
+
 
 
 //Troubleshooting marker, will be disabled in game later
@@ -125,14 +125,19 @@ createMarker ["Task", _taskLocation];
 
 //Creating task list for all playbable units (in theory this will work on dedicated server)
 {
-		_crewTask = _x createSimpleTask ["Rescue Helicopter Crew"];
-		_crewTask setSimpleTaskDescription ["Rescue as many of the helicopter crew as you can","Rescue Crew", "Rescue Crew"];
-		_crewTask setSimpleTaskDestination _taskLocation;
+		crewTask = _x createSimpleTask ["Rescue Helicopter Crew"];
+		crewTask setSimpleTaskDescription ["Rescue as many of the helicopter crew as you can","Rescue Crew", "Rescue Crew"];
+		crewTask setSimpleTaskDestination _taskLocation;
 		
-		_wreckTask = _x createSimpleTask ["Locate and Destroy Helicopter Wreck"];
-		_wreckTask setSimpleTaskDescription ["Locate and Destroy the wrecked helicopter to prevent enemy from seizing intel. The last known location of the helicopter is shown on the map.", "Destroy Wreck", "Destroy Wreck"];
-		_wreckTask setSimpleTaskDestination _taskLocation;
+		wreckTask = _x createSimpleTask ["Locate and Destroy Helicopter Wreck"];
+		wreckTask setSimpleTaskDescription ["Locate and Destroy the wrecked helicopter to prevent enemy from seizing intel. The last known location of the helicopter is shown on the map.", "Destroy Wreck", "Destroy Wreck"];
+		wreckTask setSimpleTaskDestination _taskLocation;
 } forEach playableUnits;
+
+_Wreck addMPEventHandler ["MPKilled", { wreckTask setTaskState "Succeeded";}];
+//_Wreck addMPEventHandler ["MPKilled", {hint "Wreck Destroyed";}];
+
+
 
 //SOME SORT OF ENEMY CREATION
 
