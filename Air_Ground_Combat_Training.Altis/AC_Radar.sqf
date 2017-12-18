@@ -1,3 +1,8 @@
+// Original code from USAF Mod by SGT Fuller
+//Modifications made by JN for adapted use
+//
+
+
 _AWACST = _this select 0;
 _var = (_AWACST getVariable ["AWACS_ACTIVE",false]);
 if (_var) exitWith {_AWACST setVariable ["AWACS_ACTIVE",false,true];};
