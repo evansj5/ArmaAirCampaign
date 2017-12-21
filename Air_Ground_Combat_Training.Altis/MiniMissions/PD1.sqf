@@ -121,21 +121,21 @@ createMarker ["Task", _taskLocation];
 	_x setHitPointDamage ["hitBody", .5, true];
 	_x setRank "PRIVATE";
 	_x addAction ["Come with me", { _this join (group player); group player selectLeader player}]; //Need to revisit removeAction
-	_x addMPEventHandler ["MPKilled", { publicKilledCrew = publicKilledCrew + 1; if (publicKilledCrew >= ((Count units airCrew))) then { crewTask setTaskState "Failed";};}];
+	_x addMPEventHandler ["MPKilled", { publicKilledCrew = publicKilledCrew + 1; if (publicKilledCrew >= ((Count units airCrew))) then { crewTask setTaskState "Failed";}; null = execVM "MiniMissions\CleanUp_PD.sqf";}];
 										
 } forEach units airCrew;
 
+_Wreck addMPEventHandler ["MPKilled", { wreckTask setTaskState "Succeeded"; execVM "MiniMissions\CleanUp_PD.sqf";}];
 
-_Wreck addMPEventHandler ["MPKilled", { wreckTask setTaskState "Succeeded";}];
 
-
-_rescue = createTrigger ["NONE", getmarkerPos _base,true];
+_rescue = createTrigger ["EMPTYDETECTOR", getmarkerPos _base,true];
 _rescue setTriggerArea [50,50,0,false];
-_rescue setTriggerActivation ["ANY", "PRESENT",true];
+_rescue setTriggerActivation ["WEST", "PRESENT",true];
 
 
-//_rescue setTriggerStatements ["{[_rescue, _x]call BIS_fnc_inTrigger}count [airCrew] > 0;","publicCrewRescued = publicCrewRescued + 1; if (publicCrewRescued >= ((count units airCrew))) then { crewTask setTaskState 'Succeeded';};",""];
-_rescue setTriggerStatements ["{[thisTrigger, _x]call BIS_fnc_inTrigger} count units airCrew >= 1;","crewTask setTaskState 'Succeeded';",""];
+_rescue setTriggerStatements ["{[thisTrigger, _x]call BIS_fnc_inTrigger} count units airCrew >= 1;","crewTask setTaskState 'Succeeded'; execVM 'MiniMissions\CleanUp_PD.sqf';",""];
+
+
 //SOME SORT OF ENEMY CREATION
 
 if (_enemyEnable) then {};
