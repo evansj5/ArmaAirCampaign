@@ -22,7 +22,7 @@ _cleanupTimer = 300;
 _base = "ftravel_PassengerTerminal";
 
 
-_crewCount = 2;
+
 
 _minCrewDist = 150;
 _maxCrewDist = 400;
@@ -40,10 +40,11 @@ _maxEnemyDist = 1500;
 _wreckType = "B_Heli_Attack_01_F";
 
 
-
 //Public Variables
 //Create group to add crew to
 airCrew = createGroup west;
+
+crewCount = 2;
 publicKilledCrew = 0;
 publicCrewRescued = 0;
 
@@ -52,23 +53,23 @@ PDRunning = true;
 
 wTaskName = "wTask" + str (PDCount);
 cTaskName = "cTask" + str (PDCount);
-
+rescueTask = false;
 
 /*
 RD_fnc_enemiesNear = 	{
 						//_enemiesNear = [_base,_radius] call RD_fnc_enemiesNear;
 						private _location = _this select 0;
 						private _radius = _this select 1;
-						
+
 						_returnValue = false;
-						
+
 						_list = _location nearEntities ["Man", _radius];
 						_nearEnemies = select {side _x == side "EAST"};
-						
+
 						_returnValue = false;
 						if (_list > 0) then { _returnValue = true;};
-						
-						
+
+
 						_returnValue;
 };
 
@@ -76,29 +77,61 @@ RD_fnc_enemiesNear = 	{
 
 
 RD_fnc_pdCleanup = {
-					
-					_cTask =  toLower ([cTaskName] call BIS_fnc_taskState);
-					_wTask =  toLower ([wTaskName] call BIS_fnc_taskState);
-					hint "Running Cleanup";
-					
-					
-					if (((_cTask == "succeeded") or (_cTask == "failed")) && (_wTask == "succeeded") ) then {
-						deleteMarker "Task";
-						deleteMarker "WreckLocation";
-						PDRunning = false;
-							
-						airCrew deleteGroupWhenEmpty true;
-						//[wTaskName] call BIS_fnc_deleteTask;
-						//[cTaskName] call BIS_fnc_deleteTask;
-												
-						deleteVehicle _Wreck;
-						{
-							deleteVehicle _x;
-						}forEach units airCrew;
 
-						};
+					//_cTask =  toLower ([cTaskName] call BIS_fnc_taskState);
+					//_wTask =  toLower ([wTaskName] call BIS_fnc_taskState);
+					hint "Running Cleanup";
+
+					deleteMarker "Task";
+					deleteMarker "WreckLocation";
+					PDRunning = false;
+					airCrew deleteGroupWhenEmpty true;
+					//[wTaskName] call BIS_fnc_deleteTask;
+					//[cTaskName] call BIS_fnc_deleteTask;
+
+					deleteVehicle _Wreck;
+					{
+						deleteVehicle _x;
+					}forEach units airCrew;
+
+
+
+
 };
+
+RD_fnc_checkTasks = {
+
+						_cTask =  toLower ([cTaskName] call BIS_fnc_taskState);
+						_wTask =  toLower ([wTaskName] call BIS_fnc_taskState);
+						if (((_cTask == "succeeded") or (_cTask == "failed")) && (_wTask == "succeeded") ) then {call RD_fnc_pdCleanup;};
+
+
+
+};
+
+
+
+
+
+
+
+RD_fnc_setTasks = {
 					
+					hint "SET TASKS RUNNING";
+					if (publicKilledCrew >= crewCount) then { [cTaskName,"FAILED", true] call BIS_fnc_taskSetState;};
+
+					if (!alive _Wreck) then {[wTaskName,"SUCCEEDED", true] call BIS_fnc_taskSetState;};
+
+					//if units in trigger >= units in air crew then blah blah blah
+					if (rescueTask) then {cTaskName, "SUCCEEDED", true} call BIS_fnc_taskState;};
+
+					call RD_fnc_checkTasks;
+
+
+
+
+
+
 
 
 //Finding suitable location to place wrecked helicopter
@@ -109,7 +142,7 @@ _wreckLocation = [];
 while {(count _wreckLocation) == 0} do {
 	_randomSpot = (getmarkerPos _base) getPos [(floor random [(_minWreckDist), ((_minWreckDist + _maxWreckDist)/2),(_maxWreckDist)]) , ((floor random 90) * 4)];
 	_wreckLocation = _randomSpot findEmptyPosition[5,50,"Land_Wreck_Heli_Attack_01_F"];
-}; 
+};
 
 //Create wrecked vehicle
 _Wreck =  createVehicle[_wreckType, _wreckLocation,[],0,"NONE"];
@@ -136,12 +169,15 @@ while {(count _crewPosition) ==0 } do {
 };
 
 //The stars of the show
-
+/*
 for [{_i=1}, {_i<=_crewCount}, {_i=_i+1}] do
 {
 	"B_helicrew_F" createUnit [_crewPosition, airCrew];
 };
+*/
 
+pilot = airCrew createUnit ["B_helicrew_F", _crewPosition,[],0,"FORM"];
+coPilot = airCrew createUnit ["B_helicrew_F", _crewPosition,[],0,"FORM"];
 
 
 
@@ -160,8 +196,8 @@ createMarker ["Task", _taskLocation];
 
 
 // New Task Creation System
-[west,[wTaskName],["Locate and destroy the damaged vehicle","Destroy Wreck","Destroy Wreck"],(getmarkerPos "Task"),true,0,true,"destroy",true] remoteExecCall ["BIS_fnc_taskCreate", 0];
-[west,[cTaskName],["Locate and rescue as many of the vehicle crew as you can","Rescue Crew","Rescue Crew"],(getmarkerPos "Task"),true,0,true,"meet",true] remoteExecCall ["BIS_fnc_taskCreate", 0];
+[west,[wTaskName],["Locate and destroy the damaged vehicle","Destroy Wreck","Destroy Wreck"],(getmarkerPos "Task"),true,0,true,"destroy",true] call BIS_fnc_taskCreate;
+[west,[cTaskName],["Locate and rescue as many of the vehicle crew as you can","Rescue Crew","Rescue Crew"],(getmarkerPos "Task"),true,0,true,"meet",true] call BIS_fnc_taskCreate;
 
 
 
@@ -170,9 +206,11 @@ createMarker ["Task", _taskLocation];
 
 
 
-//Setting up the crew members 
+//Setting up the crew members
+
 
 {
+
 	_x removeItems "Firstaidkit";
 	_x setUnitPosWeak "Middle";
 	_x setCombatMode "GREEN";
@@ -181,19 +219,28 @@ createMarker ["Task", _taskLocation];
 	_x setRank "PRIVATE";
 	_x addAction ["Come with me", { _this join (group player); group player selectLeader player}]; //Need to revisit removeAction
 	//_x addMPEventHandler ["MPKilled", { publicKilledCrew = publicKilledCrew + 1; if (publicKilledCrew >= ((Count units airCrew))) then { crewTask setTaskState "Failed";}; null = execVM "MiniMissions\CleanUp_PD.sqf";}];
-	_x addMPEventHandler ["MPKilled", { publicKilledCrew = publicKilledCrew + 1; if (publicKilledCrew >= ((Count units airCrew))) then { [cTaskName,"FAILED", true] Call BIS_fnc_taskSetState;}; call RD_fnc_pdCleanup;}];									
+	_x addMPEventHandler ["MPKilled", { publicKilledCrew = publicKilledCrew + 1; call RD_fnc_setTasks}];
+
+
 } forEach units airCrew;
 
-_Wreck addMPEventHandler ["MPKilled", { [wTaskName,"SUCCEEDED", true] remoteExecCall ["BIS_fnc_taskSetState",0]; call RD_fnc_pdCleanup;}];
 
+_Wreck addMPEventHandler ["MPKilled", {call RD_fnc_setTasks;}];
 
 _rescue = createTrigger ["EMPTYDETECTOR", getmarkerPos _base,true];
 _rescue setTriggerArea [50,50,0,false];
 _rescue setTriggerActivation ["WEST", "PRESENT",true];
+_rescue setTriggerStatements ["{[thisTrigger, _x]call BIS_fnc_inTrigger} count [pilot, coPilot] >= (crewCount - publicKilledCrew);","rescueTask = true; call RD_fnc_setTasks;",""];
 
 
-//_rescue setTriggerStatements ["{[thisTrigger, _x]call BIS_fnc_inTrigger} count units airCrew >= 1;","crewTask setTaskState 'Succeeded'; execVM 'MiniMissions\CleanUp_PD.sqf';",""];
-_rescue setTriggerStatements ["{[thisTrigger, _x]call BIS_fnc_inTrigger} count units airCrew >= 1;","hint '\nDumpster fire';[cTaskName,'SUCCEEDED', true] call BIS_fnc_taskSetState; call RD_fnc_pdCleanup;",""];
+
+
+
+
+
+
+
+
 
 
 //SOME SORT OF ENEMY CREATION
