@@ -116,7 +116,7 @@ RD_fnc_checkTasks = {
 
 
 RD_fnc_setTasks = {
-					
+
 					hint "SET TASKS RUNNING";
 					if (publicKilledCrew >= crewCount) then { [cTaskName,"FAILED", true] call BIS_fnc_taskSetState;};
 
@@ -126,7 +126,7 @@ RD_fnc_setTasks = {
 					if (rescueTask) then {cTaskName, "SUCCEEDED", true} call BIS_fnc_taskState;};
 
 					call RD_fnc_checkTasks;
-
+};
 
 
 
@@ -246,6 +246,3 @@ _rescue setTriggerStatements ["{[thisTrigger, _x]call BIS_fnc_inTrigger} count [
 //SOME SORT OF ENEMY CREATION
 
 if (_enemyEnable) then {};
-
-
-
